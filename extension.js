@@ -7,9 +7,13 @@ const Gettext = imports.gettext.domain('gnome-shell');
 const _ = Gettext.gettext;
 
 const Main = imports.ui.main;
+const DateMenu = imports.ui.dateMenu;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const Calendar = imports.ui.calendar;
+
+const HIDE_CLOCK = 'false'; //true to hide normal clock, false to show this clock and the normal clock
+const TOP_BOX = 'right'; //options are left, right, center, center2, left or right keeps normal clock in center unless you hidden above
 
 function Clock () {
   this._init();
@@ -24,7 +28,7 @@ Clock.prototype = {
     this.now = new Date();
 
     this.actor = new St.DrawingArea({style_class: 'clock-area', reactive: true});
-    this.actor.connect('repaint', Lang.bind(this, this._draw));
+    this.repaint = this.actor.connect("repaint", Lang.bind(this, this._draw));
 
     Mainloop.timeout_add_seconds(1, Lang.bind(this, function () {
       this.now = new Date();
@@ -90,6 +94,7 @@ ClockButton.prototype = {
   _init: function() {
     let item;
     let box;
+    this.orgDateMenu = Main.panel._dateMenu;
     this._eventSource = new Calendar.DBusEventSource();
 
     PanelMenu.Button.prototype._init.call(this, 0.5);
@@ -108,6 +113,10 @@ ClockButton.prototype = {
     box.add(this._calendar.actor);
     this._calendar._update(true);
 
+    this._itemSeparator = new PopupMenu.PopupSeparatorMenuItem();
+    box.add(this._itemSeparator.actor);
+    this.menu.addSettingsAction(_("Date and Time Settings"), 'gnome-datetime-panel.desktop');
+
     this.menu.connect('open-state-changed', 
                       Lang.bind(this, function(menu, isOpen) {
                           if (isOpen) {
@@ -119,35 +128,70 @@ ClockButton.prototype = {
     this._updateMenu();
 
     this._clockButton = new St.BoxLayout();
-    this._clockIconBox = new St.BoxLayout({ style_class: 'clock-status-icon'});
+    this._clockIconBox = new St.BoxLayout({ style_class: 'clock-status-icon' });
 
     let clock = new St.BoxLayout({ style_class: 'clock-status-icon' });
     clock.add((new Clock()).actor);
 
     this._clockIconBox.add_actor(clock);
     this._clockButton.add_actor(this._clockIconBox);
-    this.actor.set_child(this._clockButton);
+    this.actor.add_actor(this._clockButton);
     
-    let _clock    = Main.panel._dateMenu;
-    Main.panel._centerBox.remove_actor(_clock.actor);
-
-    let _children = Main.panel._rightBox.get_children();
-    Main.panel._rightBox.insert_actor(this.actor, _children.length - 1);
-    Main.panel._menus.addMenu(this.menu);
   },
   
  _updateMenu: function() {
         let dateFormat;
         let displayDate = new Date();
 
-        dateFormat = _("%A %B %e, %H:%M");
+        dateFormat = _("%A %B %e, %l:%M %p");
         this._date.set_text(displayDate.toLocaleFormat(dateFormat));
 
         Mainloop.timeout_add_seconds(1, Lang.bind(this, this._updateMenu));
         return false;
+    },
+
+    enable: function() {
+        let hideclock = HIDE_CLOCK;
+        let position = TOP_BOX;
+                    if (hideclock == 'true') {
+        Main.panel._dateMenu.actor.hide();
+                    }
+                    if (position == 'left') {
+        let _children = Main.panel._leftBox.get_children();
+        Main.panel._leftBox.insert_actor(this.actor, _children.length - 1);
+        Main.panel._menus.addMenu(this.menu);
+                    } else if (position == 'right') {
+        let _children = Main.panel._rightBox.get_children();
+        Main.panel._rightBox.insert_actor(this.actor, _children.length - 1);
+        Main.panel._menus.addMenu(this.menu);
+                    } else if (position == 'center') {
+        Main.panel._centerBox.insert_actor(this.actor, 0);
+        Main.panel._menus.addMenu(this.menu);
+                    } else if (position == 'center2') {
+        Main.panel._centerBox.insert_actor(this.actor, 1);
+        Main.panel._menus.addMenu(this.menu);
+                    }
+    },
+    
+    disable: function() {
+        let hideclock = HIDE_CLOCK;
+        let position = TOP_BOX;
+                    if (hideclock == 'true') {
+        Main.panel._dateMenu.actor.show();
+                    }
+                    if (position == 'left') {
+        Main.panel._leftBox.remove_actor(this.actor);
+                    } else if (position == 'right') {
+        Main.panel._rightBox.remove_actor(this.actor);
+                    } else if (position == 'center') {
+        Main.panel._centerBox.remove_actor(this.actor);
+                    } else if (position == 'center2') {
+        Main.panel._centerBox.remove_actor(this.actor);
+                    }
     }
+
 };
 
-function main() {
-  new ClockButton();
+function init() {
+  return new ClockButton();
 }
