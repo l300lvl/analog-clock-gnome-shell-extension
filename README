@@ -1,0 +1,3 @@
+Replace digital clock with analog clock. Updated for GS 3.2 and modified to properly restore the original clock. Currently this doesn't have a calender or work with Events table or GTG tasks, but it has the option to function with the normal clock by modifying the extension.js.
+
+Install from here: 
