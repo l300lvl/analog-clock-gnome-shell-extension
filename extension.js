@@ -12,8 +12,11 @@ const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const Calendar = imports.ui.calendar;
 
-const HIDE_CLOCK = 'false'; //true to hide normal clock, false to show this clock and the normal clock
-const TOP_BOX = 'right'; //options are left, right, center, center2, left or right keeps normal clock in center unless you hidden above
+const HIDE_CLOCK = false; //true to hide normal clock, false to show this clock and the normal clock
+const TOP_BOX = 'center2'; //options are left, right, center, center2, left or right keeps normal clock in center unless you hidden above
+
+/* STOP! */
+/* No Editing Below This Line!!!! */
 
 function Clock () {
   this._init();
@@ -30,7 +33,7 @@ Clock.prototype = {
     this.actor = new St.DrawingArea({style_class: 'clock-area', reactive: true});
     this.repaint = this.actor.connect("repaint", Lang.bind(this, this._draw));
 
-    Mainloop.timeout_add_seconds(1, Lang.bind(this, function () {
+    event = Mainloop.timeout_add_seconds(1, Lang.bind(this, function () {
       this.now = new Date();
       this.actor.queue_repaint();
       return true;
@@ -158,22 +161,23 @@ ClockButton.prototype = {
                     }
                     if (position == 'left') {
         let _children = Main.panel._leftBox.get_children();
-        Main.panel._leftBox.insert_actor(this.actor, _children.length - 1);
+        Main.panel._leftBox.insert_child_at_index(this.actor, _children.length - 1);
         Main.panel._menus.addMenu(this.menu);
                     } else if (position == 'right') {
         let _children = Main.panel._rightBox.get_children();
-        Main.panel._rightBox.insert_actor(this.actor, _children.length - 1);
+        Main.panel._rightBox.insert_child_at_index(this.actor, _children.length - 1);
         Main.panel._menus.addMenu(this.menu);
                     } else if (position == 'center') {
-        Main.panel._centerBox.insert_actor(this.actor, 0);
+        Main.panel._centerBox.insert_child_at_index(this.actor, 0);
         Main.panel._menus.addMenu(this.menu);
                     } else if (position == 'center2') {
-        Main.panel._centerBox.insert_actor(this.actor, 1);
+        Main.panel._centerBox.insert_child_at_index(this.actor, 1);
         Main.panel._menus.addMenu(this.menu);
                     }
     },
     
     disable: function() {
+        Mainloop.source_remove(event);
         let hideclock = HIDE_CLOCK;
         let position = TOP_BOX;
                     if (hideclock == 'true') {
