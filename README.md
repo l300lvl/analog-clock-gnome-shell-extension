@@ -1,10 +1,8 @@
 ### Description: 
 
-Working with 3.2-3.6. Replace digital clock with Analog Neon Clock. Updated to work with the original date menu. Todo: Allow keeping original clock, add time to menu.
+Working with 3.2-3.6. Replace digital clock with Analog Neon Clock. Updated to work with the original date menu. Todo: Fix bug on enable, correct disable. Allow keeping original clock, add time to menu.
 
-Much credit to Obsidien for his help and code skills, I suggest you check out his amazing work:
-
-https://github.com/Obsidien
+Much love to mathematicalcofee for the amazing help fixing the many bugs of this. Her work speaks for itself: https://extensions.gnome.org/accounts/profile/mathematical.coffee
 
 
 ### 1 click install from E.G.O:

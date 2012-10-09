@@ -13,6 +13,8 @@ const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const Calendar = imports.ui.calendar;
 
+//let dummyActor;
+
 function Clock () {
   this._init();
 }
@@ -23,12 +25,13 @@ Clock.prototype = {
     this.values.push({color: "-clock-color", values: []});
     this.values.push({color: "-hours-color", values: []});
     this.values.push({color: "-mins-color", values: []});
+    this.values.push({color: "-secs-color", values: []});
     this.now = new Date();
 
     this.actor = new St.DrawingArea({style_class: 'clock-area', reactive: true});
     this.repaint = this.actor.connect("repaint", Lang.bind(this, this._draw));
 
-    Mainloop.timeout_add_seconds(1, Lang.bind(this, function () {
+    this._timeoutID = Mainloop.timeout_add_seconds(1, Lang.bind(this, function () {
       this.now = new Date();
       this.actor.queue_repaint();
       return true;
@@ -51,13 +54,13 @@ Clock.prototype = {
     cr.save();
  
     cr.arc(0,0, Math.floor(height/2) - 2, 0, 7);
-    cr.setLineWidth(2.5);
+    cr.setLineWidth(2.3);
     cr.stroke();
     
     //hour hand
     color = themeNode.get_color(this.values[1].color);
     Clutter.cairo_set_source_color(cr, color);
-    cr.setLineWidth(2.2);
+    cr.setLineWidth(2.0);
 
     cr.rotate( (hour + sec/3600 + min/60) * Math.PI/6 + Math.PI);
     
@@ -70,7 +73,7 @@ Clock.prototype = {
     // minute hand
     color = themeNode.get_color(this.values[2].color);
     Clutter.cairo_set_source_color(cr, color);
-    cr.setLineWidth(1.6);
+    cr.setLineWidth(1.9);
 
     cr.rotate( (min+sec/60) * Math.PI/30 + Math.PI);
     
@@ -80,6 +83,27 @@ Clock.prototype = {
 
     cr.save();
     cr.restore();
+
+    // second hand
+    color = themeNode.get_color(this.values[3].color);
+    Clutter.cairo_set_source_color(cr, color);
+    cr.setLineWidth(1.8);
+
+//    cr.rotate( (sec/60) * Math.PI/30 + Math.PI);
+    cr.rotate( (360/60) * (sec+45) * (3.141593/180))
+//    cr.rotate( ( 45 + sec + msec / 1000000.0 ) * 3.141593 / 30 )
+    cr.moveTo(0,0);
+    cr.lineTo(0, Math.floor(height/2)-1.5);
+    cr.stroke();
+
+    cr.save();
+    cr.restore();
+  },
+
+  // @@ add a method destroy() that makes sure this class cleans up after
+  // itself, i.e. disconnect the Mainloop.timeout_add_seconds
+  destroy: function () {
+    Mainloop.source_remove(this._timeoutID);
   }
 };
 
@@ -97,33 +121,48 @@ ClockButton.prototype = {
     if (age=="old") this.date_menu = Main.panel._dateMenu
     else            this.date_menu = Main.panel.statusArea.dateMenu
 
-//    this.date_menu = Main.panel._dateMenu;
-    this.orig_clock = this.date_menu._clock;
-//    this.timeout = null;
-    this._clockButton = new St.BoxLayout();
-    this._clockIconBox = new St.BoxLayout({ style_class: 'clock-status-icon' });
+    this.orig_clock = this.date_menu._clockDisplay;
 
-    let clock = new St.BoxLayout({ style_class: 'clock-status-icon' });
-    clock.add((new Clock()).actor);
-
-    this._clockIconBox.add_actor(clock);
-    this._clockButton.add_actor(this._clockIconBox);
-    this.actor.add_actor(this._clockButton);
-    
   },
 
     enable: function() {
+        this._clockButton = new St.BoxLayout();
+        this._clockIconBox = new St.BoxLayout({ style_class: 'clock-status-icon' });
+
+        let clock = new St.BoxLayout({ style_class: 'clock-status-icon' });
+//    clock.add((new Clock()).actor);
+
+        this._clock = new Clock();
+        clock.add(this._clock.actor);
+
+        this._clockIconBox.add_actor(clock);
+        this._clockButton.add_actor(this._clockIconBox);
+        this.actor.add_actor(this._clockButton);
+//move to right 
+        this.date_menu.actor.reparent(Main.panel._rightBox);
+
         this.date_menu.actor.remove_actor(this.orig_clock);
-        this.date_menu.actor.add_actor(this.actor);
-//        Main.panel._centerBox.insert_child_at_index(this.actor, 0);
+        this._clockButton.reparent(this.date_menu.actor);
+
+
+
     },
     
     disable: function() {
-//        Main.panel._centerBox.remove_actor(this.actor);
-//        MainLoop.source_remove(this.timeout);
+        Main.panel._rightBox.remove_actor(this.date_menu.actor);
 
-        this.date_menu.actor.remove_actor(this.actor);
+
+        this._clock.destroy();
+
+        Main.panel._centerBox.insert_child_at_index(this.date_menu.actor, 0);
+
+//        Main.panel._centerBox.add(this.date_menu.actor, 0);
+
+        this.date_menu.actor.remove_actor(this._clockButton);
+
         this.date_menu.actor.add_actor(this.orig_clock);
+
+
     }
 
 };
@@ -132,7 +171,7 @@ let age;
 
 function init(metadata) {
     let current_version = Config.PACKAGE_VERSION.split('.')
-    if (current_version.length != 3 || current_version[0] != 3) throw new Error("Strange version number (extension.js:8).")
+    if (current_version.length != 3 || current_version[0] != 3) throw new Error("Strange version number (extension.js:153).")
     
     switch (current_version[1]) {
         case"2": global.log("Warning of extension [" + metadata.uuid + "]:\n              Old development release detected (" + Config.PACKAGE_VERSION + "). You should upgrade!\n")   //eak
@@ -142,7 +181,7 @@ function init(metadata) {
         case"5": global.log("Warning of extension [" + metadata.uuid + "]:\n              Development release detected (" + Config.PACKAGE_VERSION + "). Loading as a 3.6 release.\n") //eak
         case"6": age = "new"
             break
-        default: throw new Error("Strange version number (extension.js:18).")
+        default: throw new Error("Strange version number (extension.js:163).")
     }
 
   return new ClockButton();
