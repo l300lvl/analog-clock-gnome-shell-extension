@@ -1,5 +1,0 @@
-Working with 3.2 and 3.4. Replace digital clock with analog clock. Currently this doesn't have 'events' or work with extensions such as Events table or GTG tasks, but it has the option to function without disabling the normal clock by modifying the extension.js.
-
-Originally forked from: https://github.com/obneq/analog-clock-gnome-shell-extension
-
-Install from here: https://extensions.gnome.org/extension/163/analog-clock/
