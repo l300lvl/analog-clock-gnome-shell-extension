@@ -3,7 +3,7 @@ const Mainloop = imports.mainloop;
 const Cairo = imports.cairo;
 const Clutter = imports.gi.Clutter;
 const St = imports.gi.St;
-const Gettext = imports.gettext.domain('gnome-shell');
+const Gettext = imports.gettext.domain('analog-clock');
 const _ = Gettext.gettext;
 
 const Config = imports.misc.config;
@@ -13,7 +13,16 @@ const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const Calendar = imports.ui.calendar;
 
-//let dummyActor;
+const Signals = imports.signals;
+const Meta = imports.gi.Meta;
+const Gio = imports.gi.Gio;
+
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const Convenience = Me.imports.convenience;
+const Keys = Me.imports.keys;
+
+//let box;
 
 function Clock () {
   this._init();
@@ -107,15 +116,18 @@ Clock.prototype = {
   }
 };
 
-function ClockButton() {
-  this._init.apply(this, arguments);
+let panelBox;
+
+function ClockButton(extensionMeta) {
+  this._init.apply(this, arguments, extensionMeta);
 }
 
 ClockButton.prototype = {
   __proto__: PanelMenu.Button.prototype,
 
-  _init: function() {
-
+  _init: function(extensionMeta) {
+        this.extensionMeta = extensionMeta;
+        this._settings = Convenience.getSettings();
     PanelMenu.Button.prototype._init.call(this, 0.5);
 
     if (age=="old") this.date_menu = Main.panel._dateMenu
@@ -123,7 +135,25 @@ ClockButton.prototype = {
 
     this.orig_clock = this.date_menu._clockDisplay;
 
+        this._settingsSignals = [];
+        this._settingsSignals.push(this._settings.connect('changed::'+Keys.POSITION, Lang.bind(this, this._setPosition)));
+        this.boxPosition = this._settings.get_string(Keys.POSITION);
+        panelBox = Main.panel["_" + this.boxPosition + "Box"];
+
   },
+
+    _setPosition: function() {
+        let oldPosition = this.boxPosition;
+        this.boxPosition = this._settings.get_string(Keys.POSITION);
+
+        // remove box
+        let panelBox = Main.panel["_" + oldPosition + "Box"];
+        panelBox.remove_actor(this.date_menu.actor);
+
+        // add box
+        panelBox = Main.panel["_" + this.boxPosition + "Box"];
+        panelBox.insert_child_at_index(this.date_menu.actor, 1);
+    },
 
     enable: function() {
         this._clockButton = new St.BoxLayout();
@@ -139,7 +169,7 @@ ClockButton.prototype = {
         this._clockButton.add_actor(this._clockIconBox);
         this.actor.add_actor(this._clockButton);
 //move to right 
-        this.date_menu.actor.reparent(Main.panel._rightBox);
+        this.date_menu.actor.reparent(panelBox);
 
         this.date_menu.actor.remove_actor(this.orig_clock);
         this._clockButton.reparent(this.date_menu.actor);
