@@ -5,11 +5,9 @@
   "name": "Analog Neon Clock", 
   "original-author": "obneq, l300lvl", 
   "shell-version": [
-    "3.9.1", 
-    "3.9.3", 
-    "3.9.5"
+    "3.10"
   ], 
   "url": "https://github.com/l300lvl/analog-clock-gnome-shell-extension", 
   "uuid": "Analog_Clock@l300lvl.co.nr", 
-  "version": 8
+  "version": 9
 }
